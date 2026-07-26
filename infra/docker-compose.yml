@@ -1,0 +1,45 @@
+version: "3.9"
+
+# Local development infrastructure only. Production uses managed
+# equivalents (e.g. Railway/Render Postgres, Upstash/managed Redis,
+# Meilisearch Cloud) — this compose file is NOT deployed as-is.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: anime-platform-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: anime_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: anime-platform-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.11
+    container_name: anime-platform-search
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: local_dev_only_key_change_me
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili-data:/meili_data
+
+volumes:
+  postgres-data:
+  redis-data:
+  meili-data:
