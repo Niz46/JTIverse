@@ -1,8 +1,8 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { PrismaService } from '../common/prisma.service';
-import { TaskType } from '@prisma/client';
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Logger } from "@nestjs/common";
+import { Job } from "bullmq";
+import { PrismaService } from "../common/prisma.service";
+import { TaskType } from "@prisma/client";
 
 /**
  * TOKEN GRANT PROCESSOR
@@ -26,7 +26,7 @@ import { TaskType } from '@prisma/client';
  *   4. Push a WebSocket notification so the UI updates without a
  *      page refresh — this is the "fast, streamed experience" part
  */
-@Processor('token-grant')
+@Processor("token-grant")
 export class TokenGrantProcessor extends WorkerHost {
   private readonly logger = new Logger(TokenGrantProcessor.name);
 
@@ -35,7 +35,11 @@ export class TokenGrantProcessor extends WorkerHost {
   }
 
   async process(job: Job): Promise<void> {
-    const { userId, taskType, incrementBy = 1 } = job.data as {
+    const {
+      userId,
+      taskType,
+      incrementBy = 1,
+    } = job.data as {
       userId: string;
       taskType: TaskType;
       incrementBy?: number;
@@ -52,7 +56,13 @@ export class TokenGrantProcessor extends WorkerHost {
 
   private async processTaskForUser(
     userId: string,
-    task: { id: string; threshold: number; tokenReward: number; isRepeatable: boolean; name: string },
+    task: {
+      id: string;
+      threshold: number;
+      tokenReward: number;
+      isRepeatable: boolean;
+      name: string;
+    },
     incrementBy: number,
   ): Promise<void> {
     // Use a transaction so the progress-check and token-grant are atomic —
@@ -78,7 +88,7 @@ export class TokenGrantProcessor extends WorkerHost {
         data: {
           userId,
           amount: task.tokenReward,
-          type: 'TASK_REWARD',
+          type: "TASK_REWARD",
           reason: `Task completed: ${task.name}`,
           relatedTaskId: task.id,
         },
@@ -98,7 +108,9 @@ export class TokenGrantProcessor extends WorkerHost {
         },
       });
 
-      this.logger.log(`Granted ${task.tokenReward} tokens to user ${userId} for "${task.name}"`);
+      this.logger.log(
+        `Granted ${task.tokenReward} tokens to user ${userId} for "${task.name}"`,
+      );
 
       // NOTE: actual WebSocket push to notify the client happens via
       // a lightweight event emitted here and consumed by the Rooms/

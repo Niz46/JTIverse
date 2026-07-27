@@ -1,10 +1,10 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { JikanService } from '../modules/content/jikan/jikan.service';
-import { AniListService } from '../modules/content/anilist/anilist.service';
-import { TmdbService } from '../modules/content/tmdb/tmdb.service';
-import { PrismaService } from '../common/prisma.service';
+import { Processor, WorkerHost, InjectQueue } from "@nestjs/bullmq";
+import { Logger } from "@nestjs/common";
+import { Job, Queue } from "bullmq";
+import { JikanService } from "../modules/content/jikan/jikan.service";
+import { AniListService } from "../modules/content/anilist/anilist.service";
+import { TmdbService } from "../modules/content/tmdb/tmdb.service";
+import { PrismaService } from "../common/prisma.service";
 
 /**
  * CONTENT SYNC PROCESSOR
@@ -19,7 +19,7 @@ import { PrismaService } from '../common/prisma.service';
  *
  * Job payload shape: { source: 'jikan' | 'anilist' | 'tmdb', startPage?: number }
  */
-@Processor('content-sync')
+@Processor("content-sync")
 export class ContentSyncProcessor extends WorkerHost {
   private readonly logger = new Logger(ContentSyncProcessor.name);
   private readonly MAX_PAGES_PER_RUN = 20; // safety ceiling per invocation
@@ -29,13 +29,14 @@ export class ContentSyncProcessor extends WorkerHost {
     private readonly anilist: AniListService,
     private readonly tmdb: TmdbService,
     private readonly prisma: PrismaService,
+    @InjectQueue("content-sync") private readonly contentSyncQueue: Queue,
   ) {
     super();
   }
 
   async process(job: Job): Promise<void> {
     const { source, startPage = 1 } = job.data as {
-      source: 'jikan' | 'anilist' | 'tmdb';
+      source: "jikan" | "anilist" | "tmdb";
       startPage?: number;
     };
 
@@ -52,29 +53,34 @@ export class ContentSyncProcessor extends WorkerHost {
       page++;
     }
 
-    this.logger.log(`${source} sync complete: ${totalSynced} items across ${page - startPage} pages`);
+    this.logger.log(
+      `${source} sync complete: ${totalSynced} items across ${page - startPage} pages`,
+    );
 
     // If we hit the safety ceiling but there's more to sync, re-enqueue
     // a continuation job so a single run never blocks the worker forever.
     if (hasNextPage) {
-      await job.queue.add('content-sync-continuation', { source, startPage: page });
+      await this.contentSyncQueue.add("content-sync-continuation", {
+        source,
+        startPage: page,
+      });
     }
 
-    if (source === 'anilist') {
+    if (source === "anilist") {
       await this.reconcileDonghuaClassification();
     }
   }
 
   private async runSyncPage(
-    source: 'jikan' | 'anilist' | 'tmdb',
+    source: "jikan" | "anilist" | "tmdb",
     page: number,
   ): Promise<{ hasNextPage: boolean; count: number }> {
     switch (source) {
-      case 'jikan':
+      case "jikan":
         return this.jikan.syncPage(page);
-      case 'anilist':
+      case "anilist":
         return this.anilist.syncPage(page);
-      case 'tmdb':
+      case "tmdb":
         return this.tmdb.syncPage(page);
     }
   }
@@ -90,29 +96,33 @@ export class ContentSyncProcessor extends WorkerHost {
    */
   private async reconcileDonghuaClassification(): Promise<void> {
     const anilistDonghua = await this.prisma.content.findMany({
-      where: { sourceApi: 'anilist', countryOfOrigin: 'CN' },
+      where: { sourceApi: "anilist", countryOfOrigin: "CN" },
       select: { title: true },
     });
 
-    const donghuaTitles = new Set(anilistDonghua.map((c) => c.title.toLowerCase().trim()));
+    const donghuaTitles = new Set(
+      anilistDonghua.map((c) => c.title.toLowerCase().trim()),
+    );
 
     const jikanMismatches = await this.prisma.content.findMany({
       where: {
-        sourceApi: 'jikan',
-        type: 'ANIME',
-        title: { in: Array.from(donghuaTitles), mode: 'insensitive' },
+        sourceApi: "jikan",
+        type: "ANIME",
+        title: { in: Array.from(donghuaTitles), mode: "insensitive" },
       },
     });
 
     for (const row of jikanMismatches) {
       await this.prisma.content.update({
         where: { id: row.id },
-        data: { type: 'DONGHUA', countryOfOrigin: 'CN' },
+        data: { type: "DONGHUA", countryOfOrigin: "CN" },
       });
     }
 
     if (jikanMismatches.length > 0) {
-      this.logger.log(`Reconciled ${jikanMismatches.length} Jikan rows to DONGHUA via AniList cross-check`);
+      this.logger.log(
+        `Reconciled ${jikanMismatches.length} Jikan rows to DONGHUA via AniList cross-check`,
+      );
     }
   }
 }
