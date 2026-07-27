@@ -1,3 +1,62 @@
-node_modules
-dist
+# ---- Dependencies ----
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ---- Environment variables (real secrets — never commit) ----
 .env
+.env.local
+.env.*.local
+apps/api/.env
+apps/web/.env
+apps/web/.env.local
+!.env.example
+!apps/api/.env.example
+
+# ---- Build output ----
+dist/
+build/
+.next/
+out/
+
+# ---- Turborepo ----
+.turbo/
+
+# ---- TypeScript build artifacts ----
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ---- Prisma ----
+# Keep schema + migrations, ignore only generated client if it's ever
+# emitted outside node_modules
+apps/api/prisma/generated/
+
+# ---- Logs ----
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# ---- Testing ----
+coverage/
+.nyc_output/
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---- Docker ----
+# Volumes are usually managed by Docker itself, not committed
+docker-data/
+postgres-data/
+redis-data/
+
+# ---- Misc ----
+*.pid
+*.seed
+*.pid.lock
+.eslintcache
