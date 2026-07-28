@@ -3,6 +3,7 @@ import { JikanService } from './jikan/jikan.service';
 import { AniListService } from './anilist/anilist.service';
 import { TmdbService } from './tmdb/tmdb.service';
 import { PrismaService } from '../../common/prisma.service';
+import { Public } from "../auth/decorators/public.decorator";
 
 /**
  * TESTING/ADMIN ENDPOINTS FOR CONTENT SYNC
@@ -31,6 +32,15 @@ export class ContentController {
     private readonly prisma: PrismaService,
   ) {}
 
+  // TEMPORARY: @Public() here, not a real fix. Now that AuthModule is
+  // actually wired into AppModule, ClerkAuthGuard runs globally — these
+  // three routes would otherwise 401 on every call, including your own
+  // curl test commands. The correct fix is an AdminGuard checking
+  // User.role === 'ADMIN', not @Public(). Build that guard before
+  // this project handles real traffic; leaving these public means
+  // ANY visitor can trigger a sync, burning your Jikan/AniList/TMDB
+  // rate limits.
+  @Public()
   @Post('sync/jikan')
   async syncJikan(@Query('page') page = '1') {
     const result = await this.jikan.syncPage(Number(page));
@@ -38,6 +48,7 @@ export class ContentController {
     return result;
   }
 
+  @Public()
   @Post('sync/anilist')
   async syncAniList(@Query('page') page = '1') {
     const result = await this.anilist.syncPage(Number(page));
@@ -45,6 +56,7 @@ export class ContentController {
     return result;
   }
 
+  @Public()
   @Post('sync/tmdb')
   async syncTmdb(@Query('page') page = '1') {
     // Will return { hasNextPage: false, count: 0 } and log a compliance
@@ -63,7 +75,11 @@ export class ContentController {
     });
   }
 
-  // FIXED: Moved 'stats/counts' ABOVE ':id' so the router evaluates it first
+  @Get(':id')
+  async getOne(@Param('id') id: string) {
+    return this.prisma.content.findUnique({ where: { id } });
+  }
+
   @Get('stats/counts')
   async counts() {
     const [anime, donghua, movie] = await Promise.all([
@@ -72,10 +88,5 @@ export class ContentController {
       this.prisma.content.count({ where: { type: 'MOVIE' } }),
     ]);
     return { anime, donghua, movie, total: anime + donghua + movie };
-  }
-
-  @Get(':id')
-  async getOne(@Param('id') id: string) {
-    return this.prisma.content.findUnique({ where: { id } });
   }
 }

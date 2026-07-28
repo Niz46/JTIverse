@@ -5,7 +5,11 @@ import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const logger = new Logger("Bootstrap");
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true is required by ClerkWebhookController — svix's
+  // Webhook.verify() needs the exact, unmodified request bytes to
+  // check the HMAC signature. Without this flag, req.rawBody is
+  // undefined and every webhook call throws BadRequestException.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.enableCors({
     origin: process.env.WEB_APP_URL ?? "http://localhost:3000",

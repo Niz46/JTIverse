@@ -84,9 +84,10 @@ enum ModerationAction {
 
 model User {
   id           String  @id @default(cuid())
+  clerkId      String  @unique
   username     String  @unique
   email        String  @unique
-  passwordHash String? // nullable: OAuth-only users have no local password
+  passwordHash String? // UNUSED while Clerk is the auth provider — Clerk holds all credentials
   gender       Gender  @default(UNSPECIFIED)
   avatarUrl    String?
   bio          String? @db.VarChar(280)
