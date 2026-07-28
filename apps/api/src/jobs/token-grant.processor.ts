@@ -25,8 +25,19 @@ import { TaskType } from "@prisma/client";
  *      TokenTransaction (the ledger) and bump User.tokenBalance
  *   4. Push a WebSocket notification so the UI updates without a
  *      page refresh — this is the "fast, streamed experience" part
+ *
+ * CONCURRENCY: capped at 20, higher than content-sync's 5. This processor
+ * has no external API dependency — it's pure Postgres reads/writes inside
+ * a $transaction — so the limiting factor is your DB's connection pool,
+ * not an external rate limit. 20 matches the connection_limit set on
+ * DATABASE_URL: a sudden burst of 1,000 users finishing an episode at the
+ * same moment enqueues 1,000 jobs, and this cap ensures at most 20 of them
+ * open a Postgres transaction simultaneously, queuing the rest instead of
+ * every job racing to grab a connection from the same pool at once. If you
+ * raise connection_limit later, raise this to match; if you lower it, lower
+ * this too — the two numbers should move together, not drift apart.
  */
-@Processor("token-grant")
+@Processor("token-grant", { concurrency: 20 })
 export class TokenGrantProcessor extends WorkerHost {
   private readonly logger = new Logger(TokenGrantProcessor.name);
 

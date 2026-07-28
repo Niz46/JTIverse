@@ -16,6 +16,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client"
 }
 
 datasource db {
@@ -48,12 +49,12 @@ enum TitleTier {
 }
 
 enum TaskType {
-  WATCH_COUNT       // watch N pieces of content
-  COMMENT_COUNT     // post N comments
+  WATCH_COUNT // watch N pieces of content
+  COMMENT_COUNT // post N comments
   ROOM_CREATE_COUNT // create N rooms
-  ROOM_JOIN_COUNT   // join N rooms
-  STREAK_DAYS       // consecutive days active
-  INVITE_COUNT      // referrals
+  ROOM_JOIN_COUNT // join N rooms
+  STREAK_DAYS // consecutive days active
+  INVITE_COUNT // referrals
 }
 
 enum TokenTransactionType {
@@ -82,39 +83,39 @@ enum ModerationAction {
 // ------------------------------------------------------------
 
 model User {
-  id            String   @id @default(cuid())
-  username      String   @unique
-  email         String   @unique
-  passwordHash  String?  // nullable: OAuth-only users have no local password
-  gender        Gender   @default(UNSPECIFIED)
-  avatarUrl     String?
-  bio           String?  @db.VarChar(280)
+  id           String  @id @default(cuid())
+  username     String  @unique
+  email        String  @unique
+  passwordHash String? // nullable: OAuth-only users have no local password
+  gender       Gender  @default(UNSPECIFIED)
+  avatarUrl    String?
+  bio          String? @db.VarChar(280)
 
   // Cached read-model. Source of truth is TokenTransaction ledger.
-  tokenBalance  Int      @default(0)
+  tokenBalance Int @default(0)
 
   equippedTitleId String?
   equippedTitle   UserTitle? @relation("EquippedTitle", fields: [equippedTitleId], references: [id])
 
   hasCompletedOnboarding Boolean @default(false)
 
-  role          UserRole @default(USER)
-  isBanned      Boolean  @default(false)
-  isShadowbanned Boolean @default(false) // comments visible to self only, invisible to others — used by moderation without alerting bad actors
+  role           UserRole @default(USER)
+  isBanned       Boolean  @default(false)
+  isShadowbanned Boolean  @default(false) // comments visible to self only, invisible to others — used by moderation without alerting bad actors
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  lastActiveAt  DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastActiveAt DateTime @default(now())
 
   // Relations
   watchHistory      WatchEvent[]
-  ownedTitles       UserTitle[]      @relation("OwnedTitles")
+  ownedTitles       UserTitle[]        @relation("OwnedTitles")
   tokenTransactions TokenTransaction[]
   comments          Comment[]
   taskProgress      UserTaskProgress[]
-  roomsCreated      Room[]           @relation("RoomHost")
+  roomsCreated      Room[]             @relation("RoomHost")
   roomMemberships   RoomMember[]
-  commentReports    CommentReport[]  @relation("Reporter")
+  commentReports    CommentReport[]    @relation("Reporter")
 
   @@index([tokenBalance])
   @@index([lastActiveAt])
@@ -131,57 +132,58 @@ enum UserRole {
 // ------------------------------------------------------------
 
 model Content {
-  id            String      @id @default(cuid())
-  type          ContentType
-  sourceApi     String      // "jikan" | "anilist" | "tmdb"
-  externalId    String      // the ID in the source system
-  title         String
-  titleNative   String?
-  synopsis      String?     @db.Text
-  coverImageUrl String?
-  bannerImageUrl String?
-  episodeCount  Int?
-  releaseYear   Int?
-  genres        String[]
-  studio        String?     // used to classify donghua vs anime (studio origin/country tag)
-  countryOfOrigin String?   // "JP" | "CN" | etc — primary donghua discriminator
-  rating        Float?      // normalized 0-10 from source
-  status        String?     // "ongoing" | "completed" | "upcoming"
+  id              String      @id @default(cuid())
+  type            ContentType
+  sourceApi       String // "jikan" | "anilist" | "tmdb"
+  externalId      String // the ID in the source system
+  title           String
+  titleNative     String?
+  synopsis        String?     @db.Text
+  coverImageUrl   String?
+  bannerImageUrl  String?
+  episodeCount    Int?
+  releaseYear     Int?
+  genres          String[]
+  studio          String? // used to classify donghua vs anime (studio origin/country tag)
+  countryOfOrigin String? // "JP" | "CN" | etc — primary donghua discriminator
+  rating          Float? // normalized 0-10 from source
+  status          String? // "ongoing" | "completed" | "upcoming"
 
   // Legal watch-sync: a link to an OFFICIAL/legal streaming destination,
   // not a hosted video file. Rooms sync playback state around this,
   // they do not proxy or embed unlicensed video.
   officialWatchUrl String?
-  trailerEmbedUrl  String?  // e.g. official YouTube trailer embed only
+  trailerEmbedUrl  String? // e.g. official YouTube trailer embed only
 
-  syncedAt      DateTime    @default(now())
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  syncedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  watchEvents   WatchEvent[]
-  comments      Comment[]
-  rooms         Room[]
+  watchEvents WatchEvent[]
+  comments    Comment[]
+  rooms       Room[]
 
   @@unique([sourceApi, externalId])
   @@index([type])
   @@index([countryOfOrigin])
   @@index([genres])
+  @@index([type, rating(sort: Desc)])
 }
 
 // Tracks a user completing (or substantially watching) a piece of content.
 // This is the event that feeds task-progress checks (BullMQ job listens here).
 model WatchEvent {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-  contentId     String
-  content       Content  @relation(fields: [contentId], references: [id])
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id])
 
   watchedPercent Float   @default(0) // 0-100, anti-abuse: only counts as "completed" above threshold (e.g. 90%)
-  isCompleted   Boolean  @default(false)
+  isCompleted    Boolean @default(false)
 
-  startedAt     DateTime @default(now())
-  completedAt   DateTime?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
 
   @@index([userId, isCompleted])
   @@index([contentId])
@@ -192,17 +194,17 @@ model WatchEvent {
 // ------------------------------------------------------------
 
 model TokenTransaction {
-  id          String                @id @default(cuid())
-  userId      String
-  user        User                  @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  amount      Int                   // positive = credit, negative = debit
-  type        TokenTransactionType
-  reason      String                // human-readable, e.g. "Task: Watch 10 Anime"
+  amount         Int // positive = credit, negative = debit
+  type           TokenTransactionType
+  reason         String // human-readable, e.g. "Task: Watch 10 Anime"
   relatedTaskId  String?
-  relatedTitleId String?            // if this tx was a title purchase
+  relatedTitleId String? // if this tx was a title purchase
 
-  createdAt   DateTime              @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
 }
@@ -213,27 +215,27 @@ model TokenTransaction {
 
 model Task {
   id           String   @id @default(cuid())
-  name         String   // "Watch 10 Anime"
+  name         String // "Watch 10 Anime"
   description  String
   type         TaskType
-  threshold    Int      // e.g. 10
-  tokenReward  Int      // e.g. 50
+  threshold    Int // e.g. 10
+  tokenReward  Int // e.g. 50
   isRepeatable Boolean  @default(false) // e.g. daily streak tasks
   isActive     Boolean  @default(true)
 
-  progress     UserTaskProgress[]
+  progress UserTaskProgress[]
 }
 
 model UserTaskProgress {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  taskId       String
-  task         Task     @relation(fields: [taskId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id])
 
-  currentCount Int      @default(0)
-  isCompleted  Boolean  @default(false)
-  completedAt  DateTime?
+  currentCount      Int       @default(0)
+  isCompleted       Boolean   @default(false)
+  completedAt       DateTime?
   // For repeatable tasks (daily streaks), tracks the last period it was granted for
   lastGrantedPeriod String?
 
@@ -246,32 +248,32 @@ model UserTaskProgress {
 // ------------------------------------------------------------
 
 model Title {
-  id           String    @id @default(cuid())
-  name         String    @unique // "Aura Farming King"
-  tier         TitleTier
-  colorHex     String    // primary display color, e.g. "#FFD700"
-  gradientHex  String?   // optional second color for animated/mythic titles
-  isAnimated   Boolean   @default(false) // mythic tier gets shimmer/gradient animation
-  tokenCost    Int       // 0 for default/free titles like NPC
-  isDefault    Boolean   @default(false) // true only for "NPC" — auto-granted on signup
-  unlockNote   String?   // e.g. "Top 10 weekly leaderboard only" for gated titles
-  sortOrder    Int       @default(0)
+  id          String    @id @default(cuid())
+  name        String    @unique // "Aura Farming King"
+  tier        TitleTier
+  colorHex    String // primary display color, e.g. "#FFD700"
+  gradientHex String? // optional second color for animated/mythic titles
+  isAnimated  Boolean   @default(false) // mythic tier gets shimmer/gradient animation
+  tokenCost   Int // 0 for default/free titles like NPC
+  isDefault   Boolean   @default(false) // true only for "NPC" — auto-granted on signup
+  unlockNote  String? // e.g. "Top 10 weekly leaderboard only" for gated titles
+  sortOrder   Int       @default(0)
 
-  owners       UserTitle[]
+  owners UserTitle[]
 
   @@index([tier])
 }
 
 // Join table: which titles a user owns, and which one (if any) is currently equipped.
 model UserTitle {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation("OwnedTitles", fields: [userId], references: [id])
-  titleId     String
-  title       Title    @relation(fields: [titleId], references: [id])
-  unlockedAt  DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation("OwnedTitles", fields: [userId], references: [id])
+  titleId    String
+  title      Title    @relation(fields: [titleId], references: [id])
+  unlockedAt DateTime @default(now())
 
-  equippedBy  User[]   @relation("EquippedTitle") // reverse of User.equippedTitle — will hold 0 or 1 user
+  equippedBy User[] @relation("EquippedTitle") // reverse of User.equippedTitle — will hold 0 or 1 user
 
   @@unique([userId, titleId])
 }
@@ -281,41 +283,41 @@ model UserTitle {
 // ------------------------------------------------------------
 
 model Comment {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-  contentId     String
-  content       Content  @relation(fields: [contentId], references: [id])
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id])
 
-  body          String   @db.VarChar(1000)
+  body String @db.VarChar(1000)
 
   // SNAPSHOT of the title at post-time — do NOT live-join to Title/UserTitle
   // for display. This is intentional: historical comments must not change
   // if the user later unequips or a title gets rebalanced.
-  titleSnapshotName     String  @default("NPC")
-  titleSnapshotColorHex String  @default("#9CA3AF")
+  titleSnapshotName     String    @default("NPC")
+  titleSnapshotColorHex String    @default("#9CA3AF")
   titleSnapshotTier     TitleTier @default(COMMON)
 
   moderationStatus ModerationAction @default(APPROVED) // set by AI moderation pass pre-publish
   isDeleted        Boolean          @default(false)
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  reports       CommentReport[]
+  reports CommentReport[]
 
   @@index([contentId, createdAt])
   @@index([userId])
 }
 
 model CommentReport {
-  id          String   @id @default(cuid())
-  commentId   String
-  comment     Comment  @relation(fields: [commentId], references: [id])
-  reporterId  String
-  reporter    User     @relation("Reporter", fields: [reporterId], references: [id])
-  reason      String
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  commentId  String
+  comment    Comment  @relation(fields: [commentId], references: [id])
+  reporterId String
+  reporter   User     @relation("Reporter", fields: [reporterId], references: [id])
+  reason     String
+  createdAt  DateTime @default(now())
 
   @@index([commentId])
 }
@@ -326,38 +328,38 @@ model CommentReport {
 // ------------------------------------------------------------
 
 model Room {
-  id          String     @id @default(cuid())
-  code        String     @unique // short shareable join code
-  hostId      String
-  host        User       @relation("RoomHost", fields: [hostId], references: [id])
-  contentId   String?
-  content     Content?   @relation(fields: [contentId], references: [id])
+  id        String   @id @default(cuid())
+  code      String   @unique // short shareable join code
+  hostId    String
+  host      User     @relation("RoomHost", fields: [hostId], references: [id])
+  contentId String?
+  content   Content? @relation(fields: [contentId], references: [id])
 
-  status      RoomStatus @default(WAITING)
-  isPrivate   Boolean    @default(false)
+  status    RoomStatus @default(WAITING)
+  isPrivate Boolean    @default(false)
 
   // Synced playback state — pushed via WebSocket, this is just the
   // last-known-good snapshot for reconnecting clients.
   playbackPositionSec Int      @default(0)
   lastSyncedAt        DateTime @default(now())
 
-  createdAt   DateTime   @default(now())
-  endedAt     DateTime?
+  createdAt DateTime  @default(now())
+  endedAt   DateTime?
 
-  members     RoomMember[]
+  members RoomMember[]
 
   @@index([code])
   @@index([status])
 }
 
 model RoomMember {
-  id        String   @id @default(cuid())
-  roomId    String
-  room      Room     @relation(fields: [roomId], references: [id])
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  joinedAt  DateTime @default(now())
-  leftAt    DateTime?
+  id       String    @id @default(cuid())
+  roomId   String
+  room     Room      @relation(fields: [roomId], references: [id])
+  userId   String
+  user     User      @relation(fields: [userId], references: [id])
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
 
   @@unique([roomId, userId])
 }

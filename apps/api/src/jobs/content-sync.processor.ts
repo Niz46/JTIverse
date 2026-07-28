@@ -18,8 +18,16 @@ import { PrismaService } from "../common/prisma.service";
  * tradeoff for metadata that doesn't change minute-to-minute.
  *
  * Job payload shape: { source: 'jikan' | 'anilist' | 'tmdb', startPage?: number }
+ *
+ * CONCURRENCY: capped at 5, not higher. This processor makes outbound
+ * calls to Jikan/AniList/TMDB, each externally rate-limited (Jikan's is
+ * 60/min). Raising concurrency here doesn't increase real throughput —
+ * it just means more parallel requests competing for the same external
+ * ceiling, plus more simultaneous writes from reconcileDonghuaClassification
+ * against the same rows. Volume is handled by the existing
+ * MAX_PAGES_PER_RUN + continuation-job pattern below, not by parallelism.
  */
-@Processor("content-sync")
+@Processor("content-sync", { concurrency: 5 })
 export class ContentSyncProcessor extends WorkerHost {
   private readonly logger = new Logger(ContentSyncProcessor.name);
   private readonly MAX_PAGES_PER_RUN = 20; // safety ceiling per invocation
