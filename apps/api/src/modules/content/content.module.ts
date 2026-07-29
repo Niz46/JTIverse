@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { JikanService } from "./jikan/jikan.service";
-import { AniListService } from "./anilist/anilist.service";
+import { AniListService } from "./jikan/anilist/anilist.service";
 import { TmdbService } from "./tmdb/tmdb.service";
 import { ContentSyncProcessor } from "../../jobs/content-sync.processor";
 import { ContentController } from "./content.controller";

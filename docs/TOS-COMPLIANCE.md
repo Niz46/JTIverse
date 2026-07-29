@@ -87,6 +87,7 @@ a monetary instrument or gambling-adjacent mechanic, which would carry
 a materially different (and heavier) compliance burden.
 
 If a future feature proposes:
+
 - allowing tokens to be bought with real money,
 - allowing tokens to be transferred user-to-user,
 - allowing tokens to be cashed out,

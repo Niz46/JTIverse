@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Param, Query, Logger } from "@nestjs/common";
 import { JikanService } from "./jikan/jikan.service";
-import { AniListService } from "./anilist/anilist.service";
+import { AniListService } from "./jikan/anilist/anilist.service";
 import { TmdbService } from "./tmdb/tmdb.service";
 import { PrismaService } from "../../common/prisma.service";
 import { Public } from "../auth/decorators/public.decorator";
