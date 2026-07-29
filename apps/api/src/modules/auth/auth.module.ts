@@ -1,7 +1,8 @@
-import { Module } from "@nestjs/common";
-import { APP_GUARD } from "@nestjs/core";
-import { ClerkAuthGuard } from "./guards/clerk-auth.guard";
-import { ClerkWebhookController } from "./webhooks/clerk-webhook.controller";
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ClerkAuthGuard } from './guards/clerk-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { ClerkWebhookController } from './webhooks/clerk-webhook.controller';
 
 /**
  * PrismaService is deliberately NOT listed in this module's providers.
@@ -19,6 +20,13 @@ import { ClerkWebhookController } from "./webhooks/clerk-webhook.controller";
  * across the whole app. Any future module (Users, Titles, Comments,
  * Rooms) should follow this same rule: inject PrismaService via
  * constructor, never re-list it in that module's own providers array.
+ *
+ * GUARD ORDER MATTERS: Nest runs multiple APP_GUARD providers in the
+ * order they're registered in this array. ClerkAuthGuard MUST come
+ * before RolesGuard — it's the one that verifies the session token
+ * and attaches `request.user`, which RolesGuard then reads to check
+ * `.role`. Reversing this order would make RolesGuard run against a
+ * request with no user attached yet.
  */
 @Module({
   controllers: [ClerkWebhookController],
@@ -26,6 +34,10 @@ import { ClerkWebhookController } from "./webhooks/clerk-webhook.controller";
     {
       provide: APP_GUARD,
       useClass: ClerkAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

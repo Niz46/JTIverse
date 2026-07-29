@@ -19,15 +19,17 @@ import { PrismaService } from "../common/prisma.service";
  *
  * Job payload shape: { source: 'jikan' | 'anilist' | 'tmdb', startPage?: number }
  *
- * CONCURRENCY: capped at 5, not higher. This processor makes outbound
- * calls to Jikan/AniList/TMDB, each externally rate-limited (Jikan's is
- * 60/min). Raising concurrency here doesn't increase real throughput —
- * it just means more parallel requests competing for the same external
- * ceiling, plus more simultaneous writes from reconcileDonghuaClassification
- * against the same rows. Volume is handled by the existing
- * MAX_PAGES_PER_RUN + continuation-job pattern below, not by parallelism.
+ * CONCURRENCY = 2, deliberately low: each job already makes many
+ * sequential external HTTP calls internally (walking pages one at a
+ * time against Jikan's ~60/min or AniList's ~90/min ceilings).
+ * Running many of THESE jobs in parallel doesn't sync faster — it
+ * just means multiple jobs compete for the same external rate limit
+ * simultaneously, tripping 429s sooner across the board. 2 is enough
+ * for a jikan job and an anilist job to run side by side without
+ * queueing behind each other, without adding parallel pressure that
+ * only speeds up hitting external rate ceilings.
  */
-@Processor("content-sync", { concurrency: 5 })
+@Processor("content-sync", { concurrency: 2 })
 export class ContentSyncProcessor extends WorkerHost {
   private readonly logger = new Logger(ContentSyncProcessor.name);
   private readonly MAX_PAGES_PER_RUN = 20; // safety ceiling per invocation
