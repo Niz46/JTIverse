@@ -2,7 +2,7 @@ import { Processor, WorkerHost, InjectQueue } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import { Job, Queue } from "bullmq";
 import { JikanService } from "../modules/content/jikan/jikan.service";
-import { AniListService } from "../modules/content/jikan/anilist/anilist.service";
+import { AniListService } from "../modules/content/anilist/anilist.service";
 import { TmdbService } from "../modules/content/tmdb/tmdb.service";
 import { PrismaService } from "../common/prisma.service";
 
