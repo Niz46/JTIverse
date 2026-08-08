@@ -7,38 +7,38 @@
 // fall through to a default case for the new value.
 // ============================================================
 
-export type Gender = 'MALE' | 'FEMALE' | 'UNSPECIFIED';
+export type Gender = "MALE" | "FEMALE" | "UNSPECIFIED";
 
-export type ContentType = 'ANIME' | 'DONGHUA' | 'MOVIE';
+export type ContentType = "ANIME" | "DONGHUA" | "MOVIE";
 
 export type TitleTier =
-  | 'COMMON'
-  | 'UNCOMMON'
-  | 'RARE'
-  | 'EPIC'
-  | 'LEGENDARY'
-  | 'MYTHIC';
+  | "COMMON"
+  | "UNCOMMON"
+  | "RARE"
+  | "EPIC"
+  | "LEGENDARY"
+  | "MYTHIC";
 
 export type TaskType =
-  | 'WATCH_COUNT'
-  | 'COMMENT_COUNT'
-  | 'ROOM_CREATE_COUNT'
-  | 'ROOM_JOIN_COUNT'
-  | 'STREAK_DAYS'
-  | 'INVITE_COUNT';
+  | "WATCH_COUNT"
+  | "COMMENT_COUNT"
+  | "ROOM_CREATE_COUNT"
+  | "ROOM_JOIN_COUNT"
+  | "STREAK_DAYS"
+  | "INVITE_COUNT";
 
 export type TokenTransactionType =
-  | 'TASK_REWARD'
-  | 'TITLE_PURCHASE'
-  | 'ADMIN_GRANT'
-  | 'ADMIN_DEDUCT'
-  | 'REFUND';
+  | "TASK_REWARD"
+  | "TITLE_PURCHASE"
+  | "ADMIN_GRANT"
+  | "ADMIN_DEDUCT"
+  | "REFUND";
 
-export type RoomStatus = 'WAITING' | 'PLAYING' | 'PAUSED' | 'ENDED';
+export type RoomStatus = "WAITING" | "PLAYING" | "PAUSED" | "ENDED";
 
-export type UserRole = 'USER' | 'MODERATOR' | 'ADMIN';
+export type UserRole = "USER" | "MODERATOR" | "ADMIN";
 
-export type ModerationAction = 'APPROVED' | 'FLAGGED' | 'REJECTED';
+export type ModerationAction = "APPROVED" | "FLAGGED" | "REJECTED";
 
 // ------------------------------------------------------------
 // Tier display config — single source of truth for title styling.
@@ -54,12 +54,42 @@ export interface TierConfig {
 }
 
 export const TITLE_TIER_CONFIG: Record<TitleTier, TierConfig> = {
-  COMMON: { label: 'Common', defaultColorHex: '#9CA3AF', glow: false, animated: false },
-  UNCOMMON: { label: 'Uncommon', defaultColorHex: '#22C55E', glow: false, animated: false },
-  RARE: { label: 'Rare', defaultColorHex: '#3B82F6', glow: false, animated: false },
-  EPIC: { label: 'Epic', defaultColorHex: '#A855F7', glow: true, animated: false },
-  LEGENDARY: { label: 'Legendary', defaultColorHex: '#F59E0B', glow: true, animated: false },
-  MYTHIC: { label: 'Mythic', defaultColorHex: '#EF4444', glow: true, animated: true },
+  COMMON: {
+    label: "Common",
+    defaultColorHex: "#9CA3AF",
+    glow: false,
+    animated: false,
+  },
+  UNCOMMON: {
+    label: "Uncommon",
+    defaultColorHex: "#22C55E",
+    glow: false,
+    animated: false,
+  },
+  RARE: {
+    label: "Rare",
+    defaultColorHex: "#3B82F6",
+    glow: false,
+    animated: false,
+  },
+  EPIC: {
+    label: "Epic",
+    defaultColorHex: "#A855F7",
+    glow: true,
+    animated: false,
+  },
+  LEGENDARY: {
+    label: "Legendary",
+    defaultColorHex: "#F59E0B",
+    glow: true,
+    animated: false,
+  },
+  MYTHIC: {
+    label: "Mythic",
+    defaultColorHex: "#EF4444",
+    glow: true,
+    animated: true,
+  },
 };
 
 // ------------------------------------------------------------
@@ -164,14 +194,19 @@ export interface RoomState {
 // ------------------------------------------------------------
 
 export type RoomClientEvent =
-  | { type: 'JOIN_ROOM'; roomCode: string }
-  | { type: 'LEAVE_ROOM'; roomId: string }
-  | { type: 'PLAY'; roomId: string; positionSec: number }
-  | { type: 'PAUSE'; roomId: string; positionSec: number }
-  | { type: 'SEEK'; roomId: string; positionSec: number };
+  | { type: "JOIN_ROOM"; roomCode: string }
+  | { type: "LEAVE_ROOM"; roomId: string }
+  | { type: "PLAY"; roomId: string; positionSec: number }
+  | { type: "PAUSE"; roomId: string; positionSec: number }
+  | { type: "SEEK"; roomId: string; positionSec: number };
 
 export type RoomServerEvent =
-  | { type: 'ROOM_STATE'; room: RoomState }
-  | { type: 'MEMBER_JOINED'; userId: string; username: string }
-  | { type: 'MEMBER_LEFT'; userId: string }
-  | { type: 'PLAYBACK_SYNC'; status: RoomStatus; positionSec: number; issuedBySocketId: string };
+  | { type: "ROOM_STATE"; room: RoomState }
+  | { type: "MEMBER_JOINED"; userId: string; username: string }
+  | { type: "MEMBER_LEFT"; userId: string }
+  | {
+      type: "PLAYBACK_SYNC";
+      status: RoomStatus;
+      positionSec: number;
+      issuedBySocketId: string;
+    };
