@@ -7,6 +7,7 @@ import { AdminModule } from "./modules/admin/admin.module";
 import { UsersModule } from "./modules/users/users.module";
 import { TitlesModule } from "./modules/titles/titles.module";
 import { CommentsModule } from "./modules/comments/comments.module";
+import { RecommendationsModule } from "./modules/recommendations/recommendations.module";
 
 /**
  * Rooms and Leaderboard modules are still empty scaffolding — Auth,
@@ -25,6 +26,7 @@ import { CommentsModule } from "./modules/comments/comments.module";
     UsersModule,
     TitlesModule,
     CommentsModule,
+    RecommendationsModule,
   ],
 })
 export class AppModule {}
