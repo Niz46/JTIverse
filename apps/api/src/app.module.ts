@@ -6,11 +6,14 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { UsersModule } from "./modules/users/users.module";
 import { TitlesModule } from "./modules/titles/titles.module";
+import { CommentsModule } from "./modules/comments/comments.module";
 
 /**
- * Comments, Rooms, Leaderboard modules are still empty scaffolding —
- * Auth, Admin, Users, and Titles (equip/unequip) now exist and are
- * wired in below.
+ * Rooms and Leaderboard modules are still empty scaffolding — Auth,
+ * Admin, Users, Titles (equip/unequip + shop), and now Comments all
+ * exist and are wired in below. See docs/TOS-COMPLIANCE.md before
+ * touching Rooms: it must sync playback state only, never host or
+ * proxy video.
  */
 @Module({
   imports: [
@@ -21,6 +24,7 @@ import { TitlesModule } from "./modules/titles/titles.module";
     AdminModule,
     UsersModule,
     TitlesModule,
+    CommentsModule,
   ],
 })
 export class AppModule {}
