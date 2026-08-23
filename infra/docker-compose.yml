@@ -1,45 +1,105 @@
-version: "3.9"
-
-# Local development infrastructure only. Production uses managed
-# equivalents (e.g. Railway/Render Postgres, Upstash/managed Redis,
-# Meilisearch Cloud) — this compose file is NOT deployed as-is.
-
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: anime-platform-postgres
-    restart: unless-stopped
+    container_name: jtiverse-postgres
+    restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: postgres_password
       POSTGRES_DB: anime_platform
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: anime-platform-redis
-    restart: unless-stopped
+    container_name: jtiverse-redis
+    restart: always
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save ""
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   meilisearch:
-    image: getmeili/meilisearch:v1.11
-    container_name: anime-platform-search
-    restart: unless-stopped
+    image: getmeili/meilisearch:v1.6
+    container_name: jtiverse-meilisearch
+    restart: always
     environment:
-      MEILI_MASTER_KEY: local_dev_only_key_change_me
-      MEILI_ENV: development
+      MEILI_HTTP_ADDR: '0.0.0.0:7700'
+      MEILI_MASTER_KEY: 'local_dev_only_key_change_me'
     ports:
       - "7700:7700"
     volumes:
-      - meili-data:/meili_data
+      - meili_data:/meili_data
+
+  # Core API Load-balanced Service
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres_password@postgres:5432/anime_platform?connection_limit=30&pool_timeout=10"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      MEILISEARCH_HOST: "http://meilisearch:7700"
+      MEILISEARCH_API_KEY: "local_dev_only_key_change_me"
+      TMDB_API_KEY: "${TMDB_API_KEY}"
+      CLERK_SECRET_KEY: "${CLERK_SECRET_KEY}"
+      CLERK_PUBLISHABLE_KEY: "${CLERK_PUBLISHABLE_KEY}"
+      CLERK_WEBHOOK_SECRET: "${CLERK_WEBHOOK_SECRET}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Dedicated Background Scraper & Job Worker Container
+  worker:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    container_name: jtiverse-worker
+    restart: always
+    command: ["npm", "run", "start:worker"]
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres_password@postgres:5432/anime_platform?connection_limit=10"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      TMDB_API_KEY: "${TMDB_API_KEY}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Nginx Gateway & Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: jtiverse-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
 
 volumes:
-  postgres-data:
-  redis-data:
-  meili-data:
+  postgres_data:
+  redis_data:
+  meili_data:

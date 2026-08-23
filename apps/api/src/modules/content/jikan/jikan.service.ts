@@ -40,8 +40,6 @@ import { PrismaService } from "../../../common/prisma.service";
 
 const JIKAN_BASE_URL = "https://api.jikan.moe/v4";
 
-// Known Chinese/donghua-producing studios — used as a fallback signal
-// when explicit country data isn't present on a given Jikan payload.
 const DONGHUA_STUDIO_ALLOWLIST = new Set([
   "haoliners animation league",
   "colored pencil animation",
@@ -79,11 +77,6 @@ export class JikanService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Fetch one page of top/seasonal anime and upsert into Content table.
-   * Called repeatedly by the scheduled sync job with increasing page
-   * numbers and a delay between calls to respect rate limits.
-   */
   async syncPage(
     page: number,
     attempt = 1,
@@ -96,8 +89,6 @@ export class JikanService {
         `${JIKAN_BASE_URL}/top/anime?page=${page}`,
       );
     } catch (error) {
-      // Genuine network-level failure (DNS, connection reset, timeout) —
-      // distinct from an HTTP error status, which is handled below.
       const message = error instanceof Error ? error.message : String(error);
       if (attempt >= MAX_ATTEMPTS) {
         this.logger.error(
@@ -115,7 +106,7 @@ export class JikanService {
     if (res.status === 429) {
       this.logger.warn(`Jikan rate limit hit on page ${page}, backing off`);
       await this.sleep(3000);
-      return this.syncPage(page, attempt); // rate-limit retries don't count toward the cap
+      return this.syncPage(page, attempt);
     }
 
     if (res.status >= 500 && res.status < 600) {
@@ -149,14 +140,6 @@ export class JikanService {
     };
   }
 
-  /**
-   * Deliberately minimal — no extra headers, no custom Agent, no
-   * keep-alive config. This bare-bones shape is what tested reliably
-   * against Jikan's Cloudflare-fronted host; adding axios-style
-   * defaults back on top of this is exactly what reintroduced the
-   * failure once already. Resist the urge to "improve" this wrapper
-   * without re-running the multi-attempt isolation test first.
-   */
   private minimalHttpsGet(
     url: string,
   ): Promise<{ status: number; body: string }> {
@@ -201,8 +184,6 @@ export class JikanService {
         trailerEmbedUrl: anime.trailer.embed_url,
       },
       update: {
-        // Re-sync mutable fields only; don't clobber fields we may have
-        // manually curated (e.g. officialWatchUrl set by an admin).
         title: anime.title,
         synopsis: anime.synopsis,
         coverImageUrl: anime.images.jpg.large_image_url,
