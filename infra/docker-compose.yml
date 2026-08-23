@@ -21,7 +21,7 @@ services:
     image: redis:7-alpine
     container_name: jtiverse-redis
     restart: always
-    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save ""
+    command: redis-server --maxmemory 1gb --maxmemory-policy noeviction --save ""
     ports:
       - "6379:6379"
     volumes:
