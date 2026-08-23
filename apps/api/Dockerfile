@@ -44,5 +44,5 @@ WORKDIR /app/apps/api
 
 # 5. Drop root privileges for runtime execution
 USER node
-EXPOSE 3000
+EXPOSE 3001
 CMD ["npm", "run", "start:prod"]
