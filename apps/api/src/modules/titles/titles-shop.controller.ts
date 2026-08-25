@@ -4,10 +4,12 @@ import {
   Post,
   Param,
   Logger,
+  UseGuards,
   NotFoundException,
   ConflictException,
   BadRequestException,
 } from "@nestjs/common";
+import { ThrottlerGuard, Throttle } from "@nestjs/throttler";
 import { PrismaService } from "../../common/prisma.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -54,6 +56,15 @@ import { User } from "@prisma/client";
  * checkAchievementGate() below and wire in the two leaderboard
  * checks — don't add a workaround elsewhere that bypasses this
  * function.
+ *
+ * RATE LIMIT ON purchase(): the existing $transaction + P2002
+ * backstop already makes this endpoint safe against a race producing
+ * a double-spend or double-grant — that was never the gap. What had
+ * no limit at all was plain repeated-request volume: nothing stopped
+ * a script from hammering this endpoint hundreds of times a minute
+ * (each one a real Postgres transaction) even though every attempt
+ * past the first would just fail on the ownership check. 20/min is
+ * generous for a real user comparison-shopping the catalog.
  */
 @Controller("titles-shop")
 export class TitlesShopController {
@@ -95,6 +106,8 @@ export class TitlesShopController {
    * same race token-grant.processor.ts's comment describes, mirrored
    * here for spending instead of earning).
    */
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post(":titleId/purchase")
   async purchase(@Param("titleId") titleId: string, @CurrentUser() user: User) {
     const title = await this.prisma.title.findUnique({

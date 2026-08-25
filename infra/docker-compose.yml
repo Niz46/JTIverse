@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: postgres_password
       POSTGRES_DB: anime_platform
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,7 +23,7 @@ services:
     restart: always
     command: redis-server --maxmemory 1gb --maxmemory-policy noeviction --save ""
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -40,7 +40,7 @@ services:
       MEILI_HTTP_ADDR: '0.0.0.0:7700'
       MEILI_MASTER_KEY: 'local_dev_only_key_change_me'
     ports:
-      - "7700:7700"
+      - "127.0.0.1:7700:7700"
     volumes:
       - meili_data:/meili_data
 

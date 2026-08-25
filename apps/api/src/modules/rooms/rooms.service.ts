@@ -19,6 +19,15 @@ import { ROOM_CODE_LENGTH } from "./dto/room.dto";
  * model (schema.prisma) is a timestamp integer, not a media chunk —
  * each member's own browser loads and plays the content
  * independently via Content.officialWatchUrl, exactly as confirmed.
+ *
+ * CONSUMERS: RoomsController (create / lookup-by-code / leave — the
+ * request/response-shaped lifecycle operations) and RoomsGateway
+ * (join / playback control / disconnect-cleanup — the real-time
+ * operations). See rooms.gateway.ts for why join lives there instead
+ * of a REST endpoint: a "member" row with no live socket attached
+ * would never receive sync updates and would never get cleaned up
+ * on disconnect, so join is inseparable from establishing the
+ * WebSocket connection itself.
  */
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I — avoids ambiguous codes read aloud or over chat
@@ -89,28 +98,54 @@ export class RoomsService {
     return room;
   }
 
-  async joinRoom(roomId: string, userId: string) {
-    // Re-open an existing membership (leftAt cleared) rather than
-    // creating a duplicate row — @@unique([roomId, userId]) on
-    // RoomMember means a straight create() would throw for a user
-    // who left and is rejoining.
+  /**
+   * Re-opens an existing membership (leftAt cleared) rather than
+   * creating a duplicate row — @@unique([roomId, userId]) on
+   * RoomMember means a straight create() would throw for a user
+   * who left and is rejoining.
+   *
+   * Returns `isNewJoin: false` for the idempotent "already an active
+   * member" case (e.g. a duplicate 'room:join' emit, or a client
+   * reconnect that races the disconnect cleanup) — RoomsGateway uses
+   * this to decide whether a ROOM_JOIN_COUNT token-grant job should
+   * fire. Without this signal, a user could farm tokens by just
+   * reconnecting the same socket repeatedly rather than actually
+   * joining a new room, the same abuse shape WatchEvent.watchedPercent
+   * and CommentsController's moderationStatus gate already guard
+   * against elsewhere in this codebase.
+   */
+  async joinRoom(
+    roomId: string,
+    userId: string,
+  ): Promise<{
+    member: {
+      id: string;
+      roomId: string;
+      userId: string;
+      joinedAt: Date;
+      leftAt: Date | null;
+    };
+    isNewJoin: boolean;
+  }> {
     const existing = await this.prisma.roomMember.findUnique({
       where: { roomId_userId: { roomId, userId } },
     });
 
     if (existing) {
       if (existing.leftAt === null) {
-        return existing; // already an active member — idempotent
+        return { member: existing, isNewJoin: false }; // already an active member — idempotent
       }
-      return this.prisma.roomMember.update({
+      const rejoined = await this.prisma.roomMember.update({
         where: { id: existing.id },
         data: { leftAt: null, joinedAt: new Date() },
       });
+      return { member: rejoined, isNewJoin: true };
     }
 
-    return this.prisma.roomMember.create({
+    const created = await this.prisma.roomMember.create({
       data: { roomId, userId },
     });
+    return { member: created, isNewJoin: true };
   }
 
   async leaveRoom(roomId: string, userId: string) {
@@ -123,6 +158,17 @@ export class RoomsService {
     await this.prisma.roomMember.update({
       where: { id: member.id },
       data: { leftAt: new Date() },
+    });
+  }
+
+  async getActiveMembers(roomId: string) {
+    return this.prisma.roomMember.findMany({
+      where: { roomId, leftAt: null },
+      select: {
+        userId: true,
+        joinedAt: true,
+        user: { select: { username: true, avatarUrl: true } },
+      },
     });
   }
 

@@ -7,10 +7,12 @@ import {
   Body,
   Query,
   Logger,
+  UseGuards,
   NotFoundException,
   ForbiddenException,
   BadRequestException,
 } from "@nestjs/common";
+import { ThrottlerGuard, Throttle } from "@nestjs/throttler";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { PrismaService } from "../../common/prisma.service";
@@ -18,7 +20,11 @@ import { Public } from "../auth/decorators/public.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { User } from "@prisma/client";
 import { CommentModerationService } from "./comment-moderation.service";
-import { CreateCommentDto, BODY_MAX_LENGTH, BODY_MIN_LENGTH } from "./dto/create-comment.dto";
+import {
+  CreateCommentDto,
+  BODY_MAX_LENGTH,
+  BODY_MIN_LENGTH,
+} from "./dto/create-comment.dto";
 import { ReportCommentDto, REASON_MAX_LENGTH } from "./dto/report-comment.dto";
 
 /**
@@ -57,6 +63,14 @@ import { ReportCommentDto, REASON_MAX_LENGTH } from "./dto/report-comment.dto";
  * token-grant job (APPROVED only — see the anti-abuse comment in
  * create() below, mirroring WatchEvent.watchedPercent's own
  * farming-prevention gate).
+ *
+ * RATE LIMIT ON create(): every call to create() makes a real,
+ * billed request to OpenAI's moderation endpoint via
+ * CommentModerationService — before this guard was added, there was
+ * no limit on how many of those a single account could trigger per
+ * minute. 15/min is generous for a real commenter and blocks a
+ * script from running up the OpenAI bill or farming COMMENT_COUNT
+ * via rapid-fire posts.
  */
 @Controller("content/:contentId/comments")
 export class CommentsController {
@@ -144,6 +158,8 @@ export class CommentsController {
    * runs the moderation check, persists, then enqueues the
    * COMMENT_COUNT token-grant job.
    */
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 15, ttl: 60_000 } })
   @Post()
   async create(
     @Param("contentId") contentId: string,
