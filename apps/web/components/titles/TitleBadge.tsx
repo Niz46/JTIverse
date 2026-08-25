@@ -45,6 +45,11 @@ export function TitleBadge({
 }: TitleBadgeProps) {
   const config = TITLE_TIER_CONFIG[tier];
 
+  // `isAnimated` is the per-title DB flag (Title.isAnimated) — it lets a specific
+  // title opt in/out of the shimmer regardless of its tier's default. Fall back
+  // to the tier's default when the caller doesn't pass one explicitly.
+  const shouldAnimate = isAnimated ?? config.animated;
+
   const sizeClasses = {
     xs: "text-[10px] px-1.5 py-0.5",
     sm: "text-xs px-2 py-0.5",
@@ -52,8 +57,8 @@ export function TitleBadge({
     lg: "text-base px-3 py-1.5",
   };
 
-  // MYTHIC: gradient background animated
-  if (config.animated && gradientHex) {
+  // MYTHIC (or any title explicitly flagged isAnimated): gradient background animated
+  if (shouldAnimate && gradientHex) {
     return (
       <span
         className={`inline-flex items-center gap-1.5 font-semibold rounded-full ${sizeClasses[size]} title-badge-mythic ${className}`}

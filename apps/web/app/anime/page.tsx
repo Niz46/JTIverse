@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { contentApi } from "@/lib/api";
 import { ContentGrid } from "@/components/content/ContentCard";
 import { EmptyState } from "@/components/ui";
+import type { PublicContent } from "@anime-platform/types";
 
 export const metadata: Metadata = {
   title: "Anime",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AnimePage() {
-  let contents = [];
+  let contents: PublicContent[] = [];
   try {
     contents = await contentApi.list("ANIME");
   } catch {

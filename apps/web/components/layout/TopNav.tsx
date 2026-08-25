@@ -12,7 +12,7 @@
  */
 
 import Link from "next/link";
-import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { UserButton, SignInButton, Show } from "@clerk/nextjs";
 import { TokenBalance } from "@/components/user/TokenBalance";
 import { MobileNav } from "./MobileNav";
 
@@ -59,12 +59,12 @@ export function TopNav() {
         {/* Right side: token balance + auth */}
         <div className="flex items-center gap-3">
           {/* Token balance — client island, only visible when signed in */}
-          <SignedIn>
+          <Show when="signed-in">
             <TokenBalance />
-          </SignedIn>
+          </Show>
 
           {/* Clerk auth — UserButton shows avatar+menu when signed in */}
-          <SignedIn>
+          <Show when="signed-in">
             <UserButton
               appearance={{
                 elements: {
@@ -73,15 +73,15 @@ export function TopNav() {
               }}
               userProfileUrl="/profile"
             />
-          </SignedIn>
+          </Show>
 
-          <SignedOut>
+          <Show when="signed-out">
             <SignInButton mode="modal">
               <button className="text-sm font-medium px-4 py-1.5 rounded-lg bg-(--color-accent) text-white hover:bg-(--color-accent-hover) transition-colors cursor-pointer">
                 Sign in
               </button>
             </SignInButton>
-          </SignedOut>
+          </Show>
 
           {/* Mobile hamburger */}
           <MobileNav links={NAV_LINKS} />

@@ -170,9 +170,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={`w-full px-3 py-2 bg-(--color-surface-2) border ${
-            error
-              ? "border-(--color-error)"
-              : "border-(--color-border)"
+            error ? "border-(--color-error)" : "border-(--color-border)"
           } rounded-lg text-sm text-(--color-text) placeholder:text-(--color-muted) focus:outline-none focus:border-(--color-accent) transition-colors ${className}`}
           {...props}
         />
@@ -209,9 +207,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={inputId}
           className={`w-full px-3 py-2 bg-(--color-surface-2) border ${
-            error
-              ? "border-(--color-error)"
-              : "border-(--color-border)"
+            error ? "border-(--color-error)" : "border-(--color-border)"
           } rounded-lg text-sm text-(--color-text) placeholder:text-(--color-muted) focus:outline-none focus:border-(--color-accent) transition-colors resize-none ${className}`}
           {...props}
         />
@@ -257,10 +253,17 @@ export function Spinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
 // SKELETON (loading placeholder)
 // ============================================================
 
-export function Skeleton({ className = "" }: { className?: string }) {
+export function Skeleton({
+  className = "",
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
     <div
       className={`bg-(--color-surface-2) rounded animate-pulse ${className}`}
+      style={style}
       aria-hidden="true"
     />
   );
@@ -298,9 +301,7 @@ export function EmptyState({
       </span>
       <p className="text-(--color-text) font-medium">{title}</p>
       {description && (
-        <p className="text-sm text-(--color-muted) max-w-xs">
-          {description}
-        </p>
+        <p className="text-sm text-(--color-muted) max-w-xs">{description}</p>
       )}
       {action}
     </div>

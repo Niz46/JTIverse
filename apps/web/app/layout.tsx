@@ -1,5 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TopNav } from "@/components/layout/TopNav";
@@ -23,13 +23,16 @@ export const metadata: Metadata = {
   },
   description:
     "The anime and donghua streaming platform where watching earns you tokens to unlock titles, cosmetics, and status.",
-  themeColor: "#0a0a0f",
   openGraph: {
     type: "website",
     siteName: "JTIverse",
     title: "JTIverse — Watch. Earn. Flex.",
     description: "Stream anime and donghua, earn tokens, unlock titles.",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0f",
 };
 
 export default function RootLayout({

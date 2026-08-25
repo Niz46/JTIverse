@@ -19,13 +19,19 @@ export function TokenBalance() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Nothing to fetch while signed out — and render() already returns null
+    // in that case below, so there's no state to reset here.
     if (!isSignedIn) {
-      setLoading(false);
       return;
     }
 
     let cancelled = false;
     (async () => {
+      // Re-arm the skeleton for this fetch cycle. Needed because `loading`
+      // only ever starts `true` on mount — without this, re-running the
+      // effect (e.g. a sign-out/sign-in) would leave the *previous*
+      // balance on screen while the new one is still in flight.
+      setLoading(true);
       try {
         const token = await getToken();
         if (!token || cancelled) return;
