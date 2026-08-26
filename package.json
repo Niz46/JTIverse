@@ -9,6 +9,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
+    "clean": "rm -rf .turbo apps/*/.turbo apps/*/dist apps/*/.next node_modules/.cache",
     "db:migrate": "cd apps/api && npx prisma migrate dev",
     "db:generate": "cd apps/api && npx prisma generate",
     "db:studio": "cd apps/api && npx prisma studio",
