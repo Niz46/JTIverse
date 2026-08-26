@@ -4,6 +4,8 @@ import { ContentGrid } from "@/components/content/ContentCard";
 import { EmptyState } from "@/components/ui";
 import type { PublicContent } from "@anime-platform/types";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Movies",
   description: "Browse anime and donghua movies on JTIverse.",

@@ -17,6 +17,8 @@ import { contentApi } from "@/lib/api";
 import { ContentRow } from "@/components/content/ContentCard";
 import type { PublicContent } from "@anime-platform/types";
 
+export const dynamic = "force-dynamic";
+
 async function getTrending(): Promise<{
   anime: PublicContent[];
   donghua: PublicContent[];
@@ -29,8 +31,9 @@ async function getTrending(): Promise<{
       contentApi.list("MOVIE"),
     ]);
     return { anime, donghua, movies };
-  } catch {
+  } catch (err) {
     // API offline or empty catalog — homepage still renders
+    console.error("Failed to load trending content:", err);
     return { anime: [], donghua: [], movies: [] };
   }
 }
@@ -169,9 +172,7 @@ export default async function HomePage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-(--color-accent)">
                     Step {i + 1}
                   </p>
-                  <p className="font-bold text-(--color-text)">
-                    {step.title}
-                  </p>
+                  <p className="font-bold text-(--color-text)">{step.title}</p>
                   <p className="text-xs text-(--color-muted) leading-relaxed">
                     {step.description}
                   </p>
