@@ -1,6 +1,11 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from "@nestjs/common";
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 /**
  * PRISMA SERVICE
@@ -17,7 +22,10 @@ import { PrismaPg } from '@prisma/adapter-pg';
  * means a future Prisma config change only needs to happen here.
  */
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
@@ -25,7 +33,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
     if (!connectionString) {
       throw new Error(
-        'DATABASE_URL is not set. Copy apps/api/.env.example to apps/api/.env and fill it in.',
+        "DATABASE_URL is not set. Copy apps/api/.env.example to apps/api/.env and fill it in.",
       );
     }
 
@@ -36,7 +44,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleInit(): Promise<void> {
     await this.$connect();
-    this.logger.log('Prisma connected via pg adapter');
+    // $connect() doesn't round-trip with a driver adapter — force one
+    // real query so a bad DATABASE_URL throws here, at boot, instead
+    // of silently on the first user request.
+    await this.$queryRaw`SELECT 1`;
+    this.logger.log("Prisma connected via pg adapter");
   }
 
   async onModuleDestroy(): Promise<void> {

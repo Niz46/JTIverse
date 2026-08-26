@@ -13,8 +13,8 @@ export default async function AnimePage() {
   let contents: PublicContent[] = [];
   try {
     contents = await contentApi.list("ANIME");
-  } catch {
-    /* empty catalog */
+  } catch (err) {
+    console.error("Failed to load anime content:", err);
   }
 
   return (

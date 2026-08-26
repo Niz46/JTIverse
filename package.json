@@ -33,6 +33,7 @@
     "msgpackr-extract@3.0.4": true
   },
   "dependencies": {
+    "@prisma/client": "^7.10.0",
     "svix": "^2.0.0"
   }
 }

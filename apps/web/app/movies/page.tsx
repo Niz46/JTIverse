@@ -13,8 +13,8 @@ export default async function MoviesPage() {
   let contents: PublicContent[] = [];
   try {
     contents = await contentApi.list("MOVIE");
-  } catch {
-    /* empty catalog */
+  } catch (err) {
+    console.error("Failed to load movie content:", err);
   }
 
   return (
